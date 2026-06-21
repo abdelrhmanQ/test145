@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <link rel="stylesheet" href="style.css">
+ <title>nAcademy</title>
+</head>
+<body>
+
+<!-- LOADING OVERLAY (shown until data finishes loading from Firestore) -->
+<div class="loading-overlay" id="loading-overlay">
+ <div class="loading-box">جاري تحميل البيانات من قاعدة البيانات...</div>
+</div>
+
+<!-- NOTIFICATION -->
+<div class="notification" id="notification">
+ <span id="notif-text">تم بنجاح</span>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+ <div class="modal" id="modal-content">
+ <div class="modal-title">
+ <span id="modal-title-text">تفاصيل</span>
+ <span class="modal-close" onclick="closeModal()"></span>
+ </div>
+ <div id="modal-body"></div>
+ </div>
+</div>
+
+<!-- HEADER -->
+<header>
+ <div class="logo">n<span>Academy</span></div>
+ <div class="header-info">
+ <div class="date-display" id="current-date"></div>
+ <div class="date-display">Admin</div>
+ </div>
+</header>
+
+<div class="app-container">
+ <!-- SIDEBAR -->
+ <nav class="sidebar">
+ <div class="sidebar-title">القائمة الرئيسية</div>
+
+ <div class="nav-item active" onclick="showSection('dashboard')"> <span class="nav-text">لوحة التحكم</span>
+ </div>
+
+ <div class="nav-item" onclick="showSection('registration')"> <span class="nav-text">التسجيل</span>
+ <span class="nav-badge" id="reg-badge">0</span>
+ </div>
+
+ <div class="nav-item" onclick="showSection('attendance')"> <span class="nav-text">الحضور</span>
+ </div>
+
+ <div class="nav-item" onclick="showSection('financial')"> <span class="nav-text">تجديد الاشتراكات</span>
+ </div>
+
+ <div class="nav-item" onclick="showSection('salaries')"> <span class="nav-text">الشؤون المالية</span>
+ </div>
+
+ <div class="nav-item" onclick="showSection('reports')"> <span class="nav-text">التقارير</span>
+ </div>
+ </nav>
+
+ <!-- MAIN CONTENT -->
+ <main class="main-content">
+
+ <!-- ==================== DASHBOARD ==================== -->
+ <div class="section active" id="section-dashboard">
+ <div class="page-title">
+ <h2>لوحة التحكم الرئيسية</h2>
+ <p>نظرة عامة على جميع الأقسام</p>
+ </div>
+
+ <div class="stats-grid">
+ <div class="stat-card blue">
+ <div class="stat-value" id="dash-total">0</div>
+ <div class="stat-label" style="color: black;">إجمالي المتدربين</div>
+ </div>
+ <div class="stat-card green">
+ <div class="stat-value" id="dash-active">0</div>
+ <div class="stat-label">اشتراكات نشطة</div>
+ </div>
+ <div class="stat-card yellow">
+ <div class="stat-value" id="dash-test">0</div>
+ <div class="stat-label">جلسات تجريبية</div>
+ </div>
+ <div class="stat-card red">
+ <div class="stat-value" id="dash-revenue">0</div>
+ <div class="stat-label">إيرادات الشهر (ج.م)</div>
+ </div>
+ </div>
+
+ <!-- Expiry Alerts -->
+ <div class="card" id="alerts-card" style="display:none;">
+ <div class="card-title" style="color: var(--warning);">تنبيهات اشتراكات قريبة من الانتهاء</div>
+ <div id="expiry-alerts" style="display: flex; flex-direction: column; gap: 10px;"></div>
+ </div>
+
+ <!-- Quick Actions -->
+ <div class="card">
+ <div class="card-title">إجراءات سريعة</div>
+ <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+ <button class="btn btn-primary" onclick="showSection('registration')">تسجيل متدرب جديد
+ </button>
+ <button class="btn btn-success" onclick="showSection('attendance')">تسجيل الحضور
+ </button>
+ <button class="btn btn-warning" onclick="showSection('financial')">تجديد اشتراك
+ </button>
+ <button class="btn btn-outline" onclick="showSection('reports')">عرض التقارير
+ </button>
+ </div>
+ </div>
+
+ <!-- Recent Registrations -->
+ <div class="card">
+ <div class="card-title">آخر التسجيلات</div>
+ <div class="table-container">
+ <table>
+ <thead>
+ <tr>
+ <th>الكود</th>
+ <th>الاسم</th>
+ <th>النوع</th>
+ <th>الحالة</th>
+ <th>باقي على الانتهاء</th>
+ </tr>
+ </thead>
+ <tbody id="recent-registrations">
+ <tr>
+ <td colspan="5" style="text-align:center; color: rgba(48,56,65,0.3); padding: 30px;">لا توجد تسجيلات بعد
+ </td>
+ </tr>
+ </tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+
+ <!-- ==================== REGISTRATION ==================== -->
+ <div class="section" id="section-registration">
+ <div class="page-title">
+ <h2>قسم التسجيل</h2>
+ <p>تسجيل متدربين جدد أو جلسات تجريبية</p>
+ </div>
+
+ <!-- Type Tabs -->
+ <div class="tabs">
+ <div class="tab active" id="tab-subscription" onclick="switchTab('subscription')">تسجيل اشتراك
+ </div>
+ <div class="tab" id="tab-test" onclick="switchTab('test')">جلسة تجريبية (TEST)
+ </div>
+ </div>
+
+ <!-- Registration Form -->
+ <div class="card">
+ <div class="card-title">بيانات المتدرب</div>
+ <div class="form-grid">
+ <div class="form-group">
+ <label>الاسم الكامل *</label>
+ <input type="text" id="reg-name" placeholder="أدخل الاسم الكامل">
+ </div>
+ <div class="form-group">
+ <label>رقم الهاتف *</label>
+ <input type="tel" id="reg-phone" placeholder="01XXXXXXXXX">
+ </div>
+ <div class="form-group">
+ <label>السن</label>
+ <input type="number" id="reg-age" placeholder="العمر بالسنوات">
+ </div>
+ <div class="form-group">
+ <label>الجنس</label>
+ <select id="reg-gender">
+ <option value="ذكر">ذكر</option>
+ <option value="أنثى">أنثى</option>
+ </select>
+ </div>
+
+ <!-- Subscription Only Fields -->
+ <div class="form-group sub-only">
+ <label>نوع الرياضة</label>
+ <input type="text" id="reg-sport" placeholder="اكتب نوع الرياضة">
+ </div>
+ <div class="form-group sub-only">
+ <label>تاريخ بداية الاشتراك</label>
+ <input type="date" id="reg-start-date">
+ </div>
+ <div class="form-group sub-only">
+ <label>مدة الاشتراك (بالأيام)</label>
+ <input type="number" id="reg-duration" placeholder="مثال: 30" value="30">
+ </div>
+ <div class="form-group sub-only">
+ <label>مبلغ الاشتراك المدفوع</label>
+ <input type="number" id="reg-amount" placeholder="المبلغ بالجنيه">
+ </div>
+ <div class="form-group">
+ <label>ملاحظات</label>
+ <input type="text" id="reg-notes" placeholder="أي ملاحظات إضافية">
+ </div>
+ </div>
+
+ <div style="margin-top: 20px; display: flex; gap: 10px;">
+ <button class="btn btn-primary" onclick="registerTrainee()">تسجيل المتدرب
+ </button>
+ <button class="btn btn-outline" onclick="clearForm()">مسح البيانات
+ </button>
+ </div>
+
+ <!-- ID Display -->
+ <div class="id-display" id="id-result">
+ <div style="font-size: 13px; color: rgba(48,56,65,0.5); margin-bottom: 10px;">تم التسجيل بنجاح! كود المتدرب:
+ </div>
+ <div class="id-code" id="generated-id">--</div>
+ <div style="font-size: 12px; color: rgba(48,56,65,0.4); margin-top: 10px;">احتفظ بهذا الكود لتسجيل الحضور
+ </div>
+ <button class="btn btn-outline btn-sm" style="margin-top: 15px;" onclick="printID()">طباعة بطاقة العضوية
+ </button>
+ </div>
+ </div>
+
+ <!-- Trainees List -->
+ <div class="card">
+ <div class="card-title">قائمة المتدربين المسجلين</div>
+ <div class="search-bar">
+ <input type="text" id="search-trainees" placeholder="ابحث باسم أو كود..."
+ oninput="searchTrainees()">
+ <button class="btn btn-outline" onclick="exportData()">تصدير</button>
+ </div>
+ <div class="table-container">
+ <table>
+ <thead>
+ <tr>
+ <th>الكود</th>
+ <th>الاسم</th>
+ <th>الهاتف</th>
+ <th>النوع</th>
+ <th>الرياضة</th>
+ <th>الحالة</th>
+ <th>باقي على الانتهاء</th>
+ <th>إجراءات</th>
+ </tr>
+ </thead>
+ <tbody id="trainees-table">
+ <tr>
+ <td colspan="8" style="text-align:center; color: rgba(48,56,65,0.3); padding: 30px;">لا يوجد متدربون مسجلون بعد
+ </td>
+ </tr>
+ </tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+
+ <!-- ==================== ATTENDANCE ==================== -->
+ <div class="section" id="section-attendance">
+ <div class="page-title">
+ <h2>قسم الحضور</h2>
+ <p>تسجيل ومتابعة حضور المتدربين</p>
+ </div>
+
+ <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+ <!-- Scanner -->
+ <div class="card">
+ <div class="card-title">إدخال كود الحضور</div>
+ <div class="scanner-area">
+ <p style="color: rgba(48,56,65,0.5); margin-bottom: 15px;">أدخل كود المتدرب لتسجيل الحضور
+ </p>
+ </div>
+ <div class="form-group" style="margin-bottom: 15px;">
+ <input type="text" id="attendance-code"
+ placeholder="مثال: RCR-2024-0001"
+ style="text-transform: uppercase; text-align: center; font-size: 18px; font-family: monospace; letter-spacing: 2px;">
+ </div>
+ <button class="btn btn-success" style="width: 100%;" onclick="recordAttendance()">تسجيل الحضور
+ </button>
+
+ <!-- Result -->
+ <div class="attendance-result" id="attendance-result">
+ <div id="attendance-result-name" style="font-size: 18px; font-weight: 700;"></div>
+ <div id="attendance-result-msg" style="color: rgba(48,56,65,0.5); font-size: 13px;"></div>
+ </div>
+ </div>
+
+ <!-- Today Stats -->
+ <div class="card">
+ <div class="card-title">إحصائيات اليوم</div>
+ <div style="display: flex; flex-direction: column; gap: 15px;">
+ <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(48,56,65,0.03); border-radius: 10px;">
+ <span style="color: rgba(48,56,65,0.6);">حاضرين اليوم</span>
+ <span style="font-size: 24px; font-weight: 700; color: var(--success);" id="today-present">0</span>
+ </div>
+ <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(48,56,65,0.03); border-radius: 10px;">
+ <span style="color: rgba(48,56,65,0.6);">غياب</span>
+ <span style="font-size: 24px; font-weight: 700; color: var(--danger);" id="today-absent">0</span>
+ </div>
+ <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(48,56,65,0.03); border-radius: 10px;">
+ <span style="color: rgba(48,56,65,0.6);">نسبة الحضور</span>
+ <span style="font-size: 24px; font-weight: 700; color: var(--warning);" id="attendance-rate">0%</span>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <!-- Attendance Log -->
+ <div class="card">
+ <div class="card-title">سجل الحضور - اليوم</div>
+ <div class="table-container">
+ <table>
+ <thead>
+ <tr>
+ <th>#</th>
+ <th>الكود</th>
+ <th>الاسم</th>
+ <th>وقت الحضور</th>
+ <th>الحالة</th>
+ </tr>
+ </thead>
+ <tbody id="attendance-log">
+ <tr>
+ <td colspan="5" style="text-align:center; color: rgba(48,56,65,0.3); padding: 30px;">لا توجد سجلات حضور لليوم
+ </td>
+ </tr>
+ </tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+
+ <!-- ==================== FINANCIAL ==================== -->
+ <div class="section" id="section-financial">
+ <div class="page-title">
+ <h2>تجديد الاشتراكات</h2>
+ <p>إدارة الاشتراكات والتجديدات والمدفوعات</p>
+ </div>
+
+ <!-- Financial Summary -->
+ <div class="financial-summary">
+ <div class="fin-card">
+ <div class="fin-amount" style="color: var(--success);" id="fin-income">0 ج.م</div>
+ <div class="fin-label">إجمالي الإيرادات</div>
+ </div>
+ <div class="fin-card">
+ <div class="fin-amount" style="color: var(--danger);" id="fin-expenses">0 ج.م</div>
+ <div class="fin-label">إجمالي المصروفات</div>
+ </div>
+ <div class="fin-card">
+ <div class="fin-amount" style="color: var(--warning);" id="fin-profit">0 ج.م</div>
+ <div class="fin-label">صافي الربح</div>
+ </div>
+ </div>
+
+ <!-- Renewal Form -->
+ <div class="card">
+ <div class="card-title">تجديد اشتراك</div>
+ <div class="form-grid">
+ <div class="form-group">
+ <label>كود المتدرب</label>
+ <input type="text" id="renew-code" placeholder="أدخل الكود"
+ oninput="searchTraineeForRenewal()">
+ </div>
+ <div class="form-group">
+ <label>اسم المتدرب</label>
+ <input type="text" id="renew-name" placeholder="سيظهر تلقائياً" readonly>
+ </div>
+ <div class="form-group">
+ <label>مدة التجديد (بالأيام)</label>
+ <input type="number" id="renew-duration" placeholder="مثال: 30" value="30">
+ </div>
+ <div class="form-group">
+ <label>المبلغ المدفوع</label>
+ <input type="number" id="renew-amount" placeholder="المبلغ بالجنيه">
+ </div>
+ <div class="form-group">
+ <label>طريقة الدفع</label>
+ <select id="renew-method">
+ <option>نقداً</option>
+ <option>تحويل بنكي</option>
+ <option>فودافون كاش</option>
+ <option>انستا باي</option>
+ </select>
+ </div>
+ <div class="form-group">
+ <label>تاريخ التجديد</label>
+ <input type="date" id="renew-date">
+ </div>
+ </div>
+ <button class="btn btn-primary" style="margin-top: 20px;" onclick="renewSubscription()">تأكيد التجديد
+ </button>
+ </div>
+
+ <!-- Payments Table -->
+ <div class="card">
+ <div class="card-title">سجل المدفوعات</div>
+ <div class="table-container">
+ <table>
+ <thead>
+ <tr>
+ <th>الكود</th>
+ <th>الاسم</th>
+ <th>نوع العملية</th>
+ <th>الخطة</th>
+ <th>المبلغ</th>
+ <th>طريقة الدفع</th>
+ <th>التاريخ</th>
+ <th>الحالة</th>
+ </tr>
+ </thead>
+ <tbody id="payments-table">
+ <tr>
+ <td colspan="8" style="text-align:center; color: rgba(48,56,65,0.3); padding: 30px;">لا توجد مدفوعات مسجلة
+ </td>
+ </tr>
+ </tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+
+ <!-- ==================== SALARIES ==================== -->
+ <div class="section" id="section-salaries">
+ <div class="page-title">
+ <h2>إدارة المرتبات والإيجار</h2>
+ <p>متابعة المصروفات التشغيلية</p>
+ </div>
+
+ <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+ <!-- Add Employee -->
+ <div class="card">
+ <div class="card-title">إضافة موظف</div>
+ <div class="form-group" style="margin-bottom: 15px;">
+ <label>اسم الموظف</label>
+ <input type="text" id="emp-name" placeholder="الاسم الكامل">
+ </div>
+ <div class="form-group" style="margin-bottom: 15px;">
+ <label>الوظيفة</label>
+ <select id="emp-role">
+ <option>مدرب رئيسي</option>
+ <option>مدرب مساعد</option>
+ <option>موظف استقبال</option>
+ <option>مشرف</option>
+ <option>عامل نظافة</option>
+ <option>أخرى</option>
+ </select>
+ </div>
+ <div class="form-group" style="margin-bottom: 15px;">
+ <label>الراتب الشهري (ج.م)</label>
+ <input type="number" id="emp-salary" placeholder="المبلغ">
+ </div>
+ <button class="btn btn-primary" style="width: 100%;" onclick="addEmployee()">إضافة الموظف
+ </button>
+ </div>
+
+ <!-- Add Expense -->
+ <div class="card">
+ <div class="card-title">إضافة مصروف / إيجار</div>
+ <div class="form-group" style="margin-bottom: 15px;">
+ <label>نوع المصروف</label>
+ <select id="expense-type">
+ <option>إيجار شهري</option>
+ <option>فواتير كهرباء</option>
+ <option>فواتير مياه</option>
+ <option>صيانة</option>
+ <option>تجهيزات</option>
+ <option>أخرى</option>
+ </select>
+ </div>
+ <div class="form-group" style="margin-bottom: 15px;">
+ <label>الوصف</label>
+ <input type="text" id="expense-desc" placeholder="وصف المصروف">
+ </div>
+ <div class="form-group" style="margin-bottom: 15px;">
+ <label>المبلغ (ج.م)</label>
+ <input type="number" id="expense-amount" placeholder="المبلغ">
+ </div>
+ <button class="btn btn-warning" style="width: 100%;" onclick="addExpense()">إضافة المصروف
+ </button>
+ </div>
+ </div>
+
+ <!-- Employees Table -->
+ <div class="card">
+ <div class="card-title">قائمة الموظفين والمرتبات</div>
+ <div class="table-container">
+ <table>
+ <thead>
+ <tr>
+ <th>#</th>
+ <th>الاسم</th>
+ <th>الوظيفة</th>
+ <th>الراتب</th>
+ <th>الحالة</th>
+ <th>إجراءات</th>
+ </tr>
+ </thead>
+ <tbody id="employees-table">
+ <tr>
+ <td colspan="6" style="text-align:center; color: rgba(48,56,65,0.3); padding: 30px;">لا يوجد موظفون مسجلون
+ </td>
+ </tr>
+ </tbody>
+ </table>
+ </div>
+ </div>
+
+ <!-- Expenses Table -->
+ <div class="card">
+ <div class="card-title">سجل المصروفات والإيجار</div>
+ <div class="table-container">
+ <table>
+ <thead>
+ <tr>
+ <th>#</th>
+ <th>النوع</th>
+ <th>الوصف</th>
+ <th>المبلغ</th>
+ <th>التاريخ</th>
+ </tr>
+ </thead>
+ <tbody id="expenses-table">
+ <tr>
+ <td colspan="5" style="text-align:center; color: rgba(48,56,65,0.3); padding: 30px;">لا توجد مصروفات مسجلة
+ </td>
+ </tr>
+ </tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+
+ <!-- ==================== REPORTS ==================== -->
+ <div class="section" id="section-reports">
+ <div class="page-title">
+ <h2>التقارير والإحصائيات</h2>
+ <p>تقارير شاملة لجميع الأقسام</p>
+ </div>
+
+ <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+ <!-- Members Report -->
+ <div class="card">
+ <div class="card-title">تقرير المتدربين</div>
+ <div id="members-report" style="display: flex; flex-direction: column; gap: 12px;"></div>
+ </div>
+
+ <!-- Financial Report -->
+ <div class="card">
+ <div class="card-title">التقرير المالي</div>
+ <div id="financial-report" style="display: flex; flex-direction: column; gap: 12px;"></div>
+ </div>
+
+ <!-- Attendance Report -->
+ <div class="card">
+ <div class="card-title">تقرير الحضور</div>
+ <div id="attendance-report" style="display: flex; flex-direction: column; gap: 12px;"></div>
+ </div>
+ </div>
+
+ <div class="card" style="margin-top: 20px;">
+ <div class="card-title">تصدير التقارير</div>
+ <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+ <button class="btn btn-primary" onclick="exportReport('members')">تقرير المتدربين
+ </button>
+ <button class="btn btn-success" onclick="exportReport('financial')">التقرير المالي
+ </button>
+ <button class="btn btn-warning" onclick="exportReport('attendance')">تقرير الحضور
+ </button>
+ <button class="btn btn-outline" onclick="printReport()">طباعة الكل
+ </button>
+ </div>
+ </div>
+ </div>
+
+ </main>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="server.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
